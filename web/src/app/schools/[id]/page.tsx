@@ -1,35 +1,22 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-async function getSchoolProfile(id: string) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
-  const { data, error } = await supabase
-    .from("schools")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    console.error("Error fetching school profile", error);
-    return null;
+export async function generateStaticParams() {
+  try {
+    const supabase = getSupabaseServerClient();
+    const { data } = await supabase.from("schools").select("id");
+    return (data ?? []).map(({ id }) => ({ id: String(id) }));
+  } catch {
+    return [];
   }
-
-  return data;
 }
 
 export default async function SchoolProfilePage({ params }: { params: { id: string } }) {
-  const profile = await getSchoolProfile(params.id);
+  const supabase = getSupabaseServerClient();
+  const { data: profile } = await supabase
+    .from("schools")
+    .select("*")
+    .eq("id", params.id)
+    .single();
 
   if (!profile) {
     return <div>Profile not found</div>;

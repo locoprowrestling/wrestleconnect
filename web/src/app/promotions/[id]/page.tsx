@@ -1,35 +1,22 @@
-import { createServerClient } from "@supabase/ssr";
-import { cookies } from "next/headers";
+import { getSupabaseServerClient } from "@/lib/supabase-server";
 
-async function getPromotionProfile(id: string) {
-  const cookieStore = cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) {
-          return cookieStore.get(name)?.value;
-        },
-      },
-    }
-  );
-  const { data, error } = await supabase
-    .from("promotions")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) {
-    console.error("Error fetching promotion profile", error);
-    return null;
+export async function generateStaticParams() {
+  try {
+    const supabase = getSupabaseServerClient();
+    const { data } = await supabase.from("promotions").select("id");
+    return (data ?? []).map(({ id }) => ({ id: String(id) }));
+  } catch {
+    return [];
   }
-
-  return data;
 }
 
 export default async function PromotionProfilePage({ params }: { params: { id: string } }) {
-  const profile = await getPromotionProfile(params.id);
+  const supabase = getSupabaseServerClient();
+  const { data: profile } = await supabase
+    .from("promotions")
+    .select("*")
+    .eq("id", params.id)
+    .single();
 
   if (!profile) {
     return <div>Profile not found</div>;

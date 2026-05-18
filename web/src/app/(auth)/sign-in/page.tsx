@@ -2,11 +2,13 @@
 
 import { FormEvent, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 import { createClient } from "@/lib/supabase-client";
 
 export default function SignInPage() {
   const supabase = createClient();
+  const router = useRouter();
   const [state, setState] = useState<{ loading: boolean; error?: string }>({
     loading: false,
   });
@@ -25,7 +27,7 @@ export default function SignInPage() {
       return;
     }
 
-    window.location.href = "/onboarding/wrestlers";
+    router.push("/onboarding/wrestlers");
   }
 
   return (
